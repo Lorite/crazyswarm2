@@ -2,9 +2,10 @@
 
 from pathlib import Path
 
+import numpy as np
+
 from crazyflie_py import Crazyswarm
 from crazyflie_py.uav_trajectory import Trajectory
-import numpy as np
 
 
 def main():
@@ -13,10 +14,7 @@ def main():
     allcfs = swarm.allcfs
 
     traj1 = Trajectory()
-    traj1.loadcsv(Path(__file__).parent / 'data/figure8.csv')
-
-    # enable logging
-    allcfs.setParam('usd.logging', 1)
+    traj1.loadcsv(Path(__file__).parent / 'data/small_rectangle.csv')
 
     TRIALS = 1
     TIMESCALE = 1.0
@@ -33,14 +31,9 @@ def main():
 
         allcfs.startTrajectory(0, timescale=TIMESCALE)
         timeHelper.sleep(traj1.duration * TIMESCALE + 2.0)
-        # allcfs.startTrajectory(0, timescale=TIMESCALE, reverse=True)
-        # timeHelper.sleep(traj1.duration * TIMESCALE + 2.0)
 
         allcfs.land(targetHeight=0.06, duration=2.0)
         timeHelper.sleep(3.0)
-
-    # disable logging
-    allcfs.setParam('usd.logging', 0)
 
 
 if __name__ == '__main__':
