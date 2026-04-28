@@ -32,11 +32,11 @@ def main():
 
     data_dir = workspace_root / 'ros2_ws/src/crazyswarm2/crazyflie_examples/crazyflie_examples/data'
     data_dir.mkdir(parents=True, exist_ok=True)
-    waypoints_file = data_dir / 'small_rectangle_waypoints.csv'
-    output_file = data_dir / 'small_rectangle.csv'
+    waypoints_file = data_dir / 'yaw_rotation_waypoints.csv'
+    output_file = data_dir / 'yaw_rotation.csv'
 
     data = np.loadtxt(waypoints_file, delimiter=',', skiprows=1)
-    traj = generate_trajectory(data, num_pieces=4)
+    traj = generate_trajectory(data, num_pieces=data.shape[0] - 1)
     traj.savecsv(output_file)
     print(f'Wrote {output_file}')
 
