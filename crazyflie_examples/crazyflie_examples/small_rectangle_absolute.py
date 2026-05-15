@@ -22,8 +22,8 @@ def main():
     for i in range(TRIALS):
         first_cf.uploadTrajectory(0, 0, traj1)
 
-        first_cf.takeoff(targetHeight=1.2, duration=3.0)
-        timeHelper.sleep(2.5)
+        first_cf.takeoff(targetHeight=1.2, duration=5.0)
+        timeHelper.sleep(5.0 + 2.0)
         pos = np.array(first_cf.initialPosition) + np.array([0, 0, 1.2])
         first_cf.goTo(pos, 0, 2.0)
         timeHelper.sleep(2.5)

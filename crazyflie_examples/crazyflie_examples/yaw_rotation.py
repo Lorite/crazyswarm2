@@ -14,13 +14,13 @@ def main():
     traj1 = Trajectory()
     traj1.loadcsv(Path(__file__).parent / 'data/yaw_rotation.csv')
 
-    TAKEOFF_DURATION = 2.5
+    TAKEOFF_DURATION = 5.0
     HOVER_DURATION = 2.0
     TIMESCALE = 1.0
 
     first_cf.uploadTrajectory(0, 0, traj1)
 
-    first_cf.takeoff(targetHeight=1.2, duration=TAKEOFF_DURATION)
+    first_cf.takeoff(targetHeight=0.4, duration=TAKEOFF_DURATION)
     timeHelper.sleep(TAKEOFF_DURATION + HOVER_DURATION)
 
     first_cf.startTrajectory(0, timescale=TIMESCALE, relative=True)
