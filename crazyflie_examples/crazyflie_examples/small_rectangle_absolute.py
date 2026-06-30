@@ -22,6 +22,11 @@ def main():
     for i in range(TRIALS):
         first_cf.uploadTrajectory(0, 0, traj1)
 
+        # Arm before takeoff (required for Crazyflie 2.1 Brushless; harmless on
+        # brushed — the brushed CF auto-armed, the brushless will not spin unarmed).
+        first_cf.arm(True)
+        timeHelper.sleep(1.0)
+
         first_cf.takeoff(targetHeight=1.2, duration=5.0)
         timeHelper.sleep(5.0 + 2.0)
         pos = np.array(first_cf.initialPosition) + np.array([0, 0, 1.2])
@@ -33,6 +38,7 @@ def main():
 
         first_cf.land(targetHeight=0.06, duration=3.0)
         timeHelper.sleep(3.0)
+        first_cf.arm(False)
 
 
 if __name__ == '__main__':

@@ -11,6 +11,13 @@ def main():
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
+
+    # Arm before takeoff (required for Crazyflie 2.1 Brushless; harmless on
+    # brushed — the brushed CF auto-armed, the brushless will not spin unarmed).
+    for cf in allcfs.crazyflies:
+        cf.arm(True)
+    timeHelper.sleep(1.0)
+
     trajs = []
     n = 2  # number of distinct trajectories
 
@@ -43,6 +50,7 @@ def main():
 
     # disable logging
     allcfs.setParam('usd.logging', 0)
+    allcfs.arm(False)
 
 
 if __name__ == '__main__':

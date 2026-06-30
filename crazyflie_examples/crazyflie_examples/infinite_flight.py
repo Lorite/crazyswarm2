@@ -12,6 +12,12 @@ def main():
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
 
+    # Arm before takeoff (required for Crazyflie 2.1 Brushless; harmless on
+    # brushed — the brushed CF auto-armed, the brushless will not spin unarmed).
+    for cf in allcfs.crazyflies:
+        cf.arm(True)
+    timeHelper.sleep(1.0)
+
     traj1 = Trajectory()
     traj1.loadcsv(Path(__file__).parent / 'data/figure8.csv')
 
@@ -51,6 +57,7 @@ def main():
             print(f'power state is not 3 (low) but {status["pm_state"]}. Landing and aborting')
             allcfs.land(targetHeight=0.06, duration=2.0)
             timeHelper.sleep(3)
+            allcfs.arm(False)
             return 1
 
         # now that battery is low, we try to land on the pad and see if it's charging

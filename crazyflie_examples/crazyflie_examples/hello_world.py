@@ -12,10 +12,16 @@ def main():
     timeHelper = swarm.timeHelper
     cf = swarm.allcfs.crazyflies[0]
 
+    # Arm before takeoff (required for Crazyflie 2.1 Brushless; harmless on
+    # brushed — the brushed CF auto-armed, the brushless will not spin unarmed).
+    cf.arm(True)
+    timeHelper.sleep(1.0)
+
     cf.takeoff(targetHeight=0.4, duration=TAKEOFF_DURATION)
     timeHelper.sleep(TAKEOFF_DURATION + HOVER_DURATION)
     cf.land(targetHeight=0.05, duration=2.5)
     timeHelper.sleep(TAKEOFF_DURATION)
+    cf.arm(False)
 
 
 if __name__ == '__main__':

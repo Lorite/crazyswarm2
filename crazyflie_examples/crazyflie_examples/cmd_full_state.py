@@ -36,6 +36,11 @@ def main():
     rate = 30.0
     Z = 0.5
 
+    # Arm before takeoff (required for Crazyflie 2.1 Brushless; harmless on
+    # brushed — the brushed CF auto-armed, the brushless will not spin unarmed).
+    cf.arm(True)
+    timeHelper.sleep(1.0)
+
     cf.takeoff(targetHeight=Z, duration=Z+1.0)
     timeHelper.sleep(Z+2.0)
 
@@ -47,6 +52,7 @@ def main():
     cf.notifySetpointsStop()
     cf.land(targetHeight=0.03, duration=Z+1.0)
     timeHelper.sleep(Z+2.0)
+    cf.arm(False)
 
 
 if __name__ == '__main__':
