@@ -42,9 +42,17 @@ def generate_launch_description():
         }]
     )
 
+    panic_button = Node(
+        package='crazyflie_examples',
+        executable='panic_button',
+        name='panic_button',
+        output='screen',
+    )
+
     return LaunchDescription([
         script_launch_arg,
         backend_launch_arg,
         crazyflie,
-        example_node
+        example_node,
+        panic_button,
     ])
