@@ -1405,6 +1405,19 @@ private:
   {
     mocap_data_received_timepoints_.emplace_back(std::chrono::steady_clock::now());
 
+    // Measurement age at transmit (issue #80): elapsed time from the MOCAP capture
+    // stamp (msg->header.stamp) to now, sent to the firmware as a relative uint16 ms
+    // so the on-board EKF can latency-compensate the external-pose fusion without a
+    // CF<->host clock sync. A missing stamp, a non-positive age (clock skew), or an
+    // age >= 65.535 s clamps to 0 == unknown, which the firmware treats as inert.
+    uint16_t age_ms = 0;
+    if (msg->header.stamp.sec != 0 || msg->header.stamp.nanosec != 0) {
+      const double age_s = (this->now() - rclcpp::Time(msg->header.stamp)).seconds();
+      if (age_s > 0.0 && age_s < 65.535) {
+        age_ms = static_cast<uint16_t>(age_s * 1000.0);
+      }
+    }
+
     // Here, we send all the poses to all CFs
     // In Crazyswarm1, we only sent the poses of the same group (i.e. channel)
 
@@ -1418,12 +1431,12 @@ private:
       if (iter != name_to_id_.end()) {
         uint8_t id = iter->second;
         if (isnan(pose.pose.orientation.w)) {
-          data_position.push_back({id, 
-            (float)pose.pose.position.x, (float)pose.pose.position.y, (float)pose.pose.position.z});
+          data_position.push_back({id,
+            (float)pose.pose.position.x, (float)pose.pose.position.y, (float)pose.pose.position.z, age_ms});
         } else {
-          data_pose.push_back({id, 
+          data_pose.push_back({id,
             (float)pose.pose.position.x, (float)pose.pose.position.y, (float)pose.pose.position.z,
-            (float)pose.pose.orientation.x, (float)pose.pose.orientation.y, (float)pose.pose.orientation.z, (float)pose.pose.orientation.w});
+            (float)pose.pose.orientation.x, (float)pose.pose.orientation.y, (float)pose.pose.orientation.z, (float)pose.pose.orientation.w, age_ms});
         }
       }
     }
