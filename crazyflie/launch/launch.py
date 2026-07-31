@@ -76,6 +76,14 @@ def parse_yaml(context):
             name='crazyflie_server',
             output='screen',
             parameters= server_params,
+            # The server IS the radio link: if it dies mid-flight the drone keeps
+            # executing its high-level trajectory with no way to reach the motors
+            # (2026-07-31: LIBUSB_ERROR_PIPE aborted the cpp server, the drone
+            # drifted, and only a battery pull stopped it). Respawn restores the
+            # link within seconds, and the localization watchdog's land retry
+            # loop then completes.
+            respawn=True,
+            respawn_delay=2.0,
         ),
         Node(
             package='crazyflie',
@@ -85,6 +93,8 @@ def parse_yaml(context):
             output='screen',
             parameters= server_params,
             prefix=PythonExpression(['"xterm -e gdb -ex run --args" if ', LaunchConfiguration('debug'), ' else ""']),
+            respawn=True,
+            respawn_delay=2.0,
         ),
         Node(
             package='crazyflie_sim',
