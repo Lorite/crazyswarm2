@@ -1,5 +1,6 @@
 #include <memory>
 #include <vector>
+#include <mutex>
 #include <regex>
 
 #include <crazyflie_cpp/Crazyflie.h>
@@ -1403,7 +1404,14 @@ private:
 
   void posesChanged(const NamedPoseArray::SharedPtr msg)
   {
-    mocap_data_received_timepoints_.emplace_back(std::chrono::steady_clock::now());
+    {
+      // Written here (mocap callback group) and read + cleared once per second by
+      // on_watchdog_timer on another executor thread. Without this lock the two race
+      // and the watchdog reports impossible intervals (e.g. a 1.2 s "gap" inside a
+      // 1 s window while the bag and the drone's locSrv.ageMs show no gap at all).
+      const std::lock_guard<std::mutex> lock(mocap_data_received_timepoints_mutex_);
+      mocap_data_received_timepoints_.emplace_back(std::chrono::steady_clock::now());
+    }
 
     // Measurement age at transmit (issue #80): elapsed time from the MOCAP capture
     // stamp (msg->header.stamp) to now, sent to the firmware as a relative uint16 ms
@@ -1531,14 +1539,22 @@ private:
     auto now = std::chrono::steady_clock::now();
 
     // motion capture
+    // Take this second's timepoints out from under the lock in one swap, so the
+    // mocap callback is never blocked for longer than a pointer exchange and the
+    // statistics below are computed on a consistent snapshot.
+    std::vector<std::chrono::time_point<std::chrono::steady_clock>> timepoints;
+    {
+      const std::lock_guard<std::mutex> lock(mocap_data_received_timepoints_mutex_);
+      timepoints.swap(mocap_data_received_timepoints_);
+    }
     // a) check if the rate was within specified bounds
-    if (mocap_data_received_timepoints_.size() >= 2) {
+    if (timepoints.size() >= 2) {
       double mean_rate = 0;
       double min_rate = std::numeric_limits<double>::max();
       double max_rate = 0;
       int num_rates_wrong = 0;
-      for (size_t i = 0; i < mocap_data_received_timepoints_.size() - 1; ++i) {
-        std::chrono::duration<double> diff = mocap_data_received_timepoints_[i+1] - mocap_data_received_timepoints_[i];
+      for (size_t i = 0; i < timepoints.size() - 1; ++i) {
+        std::chrono::duration<double> diff = timepoints[i+1] - timepoints[i];
         double rate = 1.0 / diff.count();
         mean_rate += rate;
         min_rate = std::min(min_rate, rate);
@@ -1547,7 +1563,7 @@ private:
           num_rates_wrong++;
         }
       }
-      mean_rate /= (mocap_data_received_timepoints_.size() - 1);
+      mean_rate /= (timepoints.size() - 1);
 
       if (num_rates_wrong > 0) {
         RCLCPP_WARN(logger_, "[all] Motion capture rate off (#: %d, Avg: %.1f, Min: %.1f, Max: %.1f)", num_rates_wrong, mean_rate, min_rate, max_rate);
@@ -1556,8 +1572,6 @@ private:
       // b) warn if no data was received
       RCLCPP_WARN(logger_, "[all] Motion capture did not receive data!");
     }
-
-    mocap_data_received_timepoints_.clear();
 
     if (publish_stats_) {
 
@@ -1649,6 +1663,7 @@ private:
     float mocap_min_rate_;
     float mocap_max_rate_;
     std::vector<std::chrono::time_point<std::chrono::steady_clock>> mocap_data_received_timepoints_;
+    std::mutex mocap_data_received_timepoints_mutex_;  // guards the vector above (callback vs watchdog thread)
     bool publish_stats_;
     rclcpp::Publisher<crazyflie_interfaces::msg::ConnectionStatisticsArray>::SharedPtr publisher_connection_stats_;
 
